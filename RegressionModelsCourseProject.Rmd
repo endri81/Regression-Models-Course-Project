@@ -1,0 +1,209 @@
+---
+title: "Regression Models Course Project"
+author: "Endri Raco"
+date: "4/12/2020"
+output: pdf_document
+---
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+if(!require(tidyverse)) install.packages('tidyverse', 
+repos = 'http://cran.us.r-project.org')
+if(!require(explore)) install.packages('explore', 
+repos = 'http://cran.us.r-project.org')
+## specify global chunk options
+knitr::opts_chunk$set(fig.width = 5, fig.height = 4, dpi = 300,
+                      out.width = '90%', fig.align = 'center',
+                      tidy.opts=list(width.cutoff=60),
+                      tidy=TRUE,
+                      cache = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+## Executive Summary
+
+This paper presents some insights regarding  the relationship between a set of variables and miles per gallon (MPG) (outcome). 
+
+For this research we will analyse **mtcars** data set. The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+
+We will write up an analysis to answer their question using regression models and exploratory data analyses.
+
+The research aims to address the following questions:
+
+  - Is an automatic or manual transmission better for MPG?
+
+  - Quantify the MPG difference between automatic and manual transmissions
+  
+  
+## Methods and Analysis
+
+### Importing data
+
+We start our work by loading our dataset:
+
+```{r, load-data}
+# Load data
+data(mtcars)
+```
+
+
+### Explore our data
+
+Let's have a look in our dataset
+
+```{r, data-explore, eval=FALSE}
+# First dataset look
+mtcars %>% explore_tbl()
+```
+The results of running **explore_tbl()** are shown in **Appendix 1**
+
+We can see that our dataset **mtcars** has 11 variables and 32 observations.
+
+Now that we have a general look in our data let's focus in separate variables:
+
+```{r, separate-var, eval = FALSE}
+mtcars %>% 
+  explore_all(ncol = 3)
+```
+
+The results are shown in Appendix 2.
+And now we will see difference between automatic and manual transmission
+
+```{r, transm, eval=FALSE}
+# Difference between automatic and manual transmission
+mtcars %>% 
+  explore(am)
+```
+
+The results of running **explore()** are shown in Appendix 3.  
+
+We see that we have $59.4 \%$ of cars corrensponding to automatic transmission and $40.6 \%$ of cars corrensponding to manual transmission.
+
+### Regression Analysis
+
+We start our regression analysis by creating a general idea regarding relationship between a set of variables and miles per gallon (MPG) (outcome):
+
+```{r, mpg-var, eval=FALSE}
+# Relationship between several variables and mpg
+mtcars %>% 
+  select(gear, mpg, hp, cyl, am) %>% 
+  explore_all(target = mpg)
+```
+
+The results are shown in Appendix 4. From the fourth boxplot we can see that cars with automatic transmission have more miles per gallon (mpg) compared to cars with manual transmission. 
+
+Saying that our $H_0$ hypothesis will be:
+
+  - MPG is the same for both transmission methods.
+
+And our alternative hypothesis $H_a$:
+
+ - MPG is not the same for both transmission methods.
+
+Let's use T test to see if it supports our $H_0$ hypothesis:
+
+```{r, t-test, eval=FALSE}
+# T test
+t_test <- t.test(mtcars$mpg~mtcars$am, conf.level=0.95)
+print(t_test)
+```
+
+The results of test are shown in Appendix 5.
+
+Our **p-vaue** is **0.001374** so we reject null hypothesis, and accept our alternative hypothesis *MPG is not the same for both transmission methods.* Anyway the only way to accept this assumption is to keep all other characteristics constant for both types of transmission. 
+
+Let's have a deeper look on the question by using linear regression analysis.
+
+We will build a  multiple linear regression model, and use function **step** in R for a stepwise regression.
+
+
+```{r, multivariate, eval=FALSE}
+# Multiple linear regression model
+reg_model1 = step(lm(data = mtcars, mpg ~ .),trace=0,steps=10000)
+summary(reg_model1)
+```
+
+Model summary is shown in Appendix 6.
+
+By looking at coefficients seems that **wt** variable, together with  **am** and **qsec**
+
+This model explains 0.85 of total variance. 
+Let's make a final examination by checking  how $mpg \sim wt + qsec$ is correlated to **am**.
+
+```{r, better-model, eval=FALSE}
+# Examine the correlation
+reg_model2 <- lm(mpg~ factor(am):wt + factor(am):qsec,data=mtcars)
+summary(reg_model2)
+```
+
+The results of examination are shown in Appendix 7
+
+## Results
+
+Our model has:
+
+  - $89.46 \%$ total variance 
+  
+  - adjusted $R^2$ $0.879$. 
+  
+By dropping acceleration speed, and **qsec** increased 1 second, **mpg** increases by 0.834 miles when automatic transmission, and 1.446 miles when manual. So it seems that in given conditions of weight and accelaration manual transmission performs better regarding mpg.
+
+## Appendix 1
+
+```{r, data-explore1, echo=FALSE}
+# First dataset look
+mtcars %>% explore_tbl()
+```
+
+## Appendix 2
+
+```{r, separate-var1, echo = FALSE}
+mtcars %>% 
+  explore_all(ncol = 3)
+```
+
+
+## Appendix 3
+
+```{r, transm1, echo=FALSE}
+# Difference between automatic and manual transmission
+mtcars %>% 
+  explore(am)
+```
+
+## Appendix 4
+
+```{r, mpg-var1, echo=FALSE}
+# Relationship between several variables and mpg
+mtcars %>% 
+  select(gear, mpg, hp, cyl, am) %>% 
+  explore_all(target = mpg)
+```
+
+
+## Appendix 5
+
+
+```{r, t-test2, echo=FALSE}
+# T test
+t_test <- t.test(mtcars$mpg~mtcars$am, conf.level=0.95)
+print(t_test)
+```
+
+## Appendix 6
+
+```{r, multivariate2, echo=FALSE}
+# Multiple linear regression model
+reg_model1 = step(lm(data = mtcars, mpg ~ .),trace=0,steps=10000)
+summary(reg_model1)
+```
+
+
+## Appendix 7
+
+
+```{r, better-model2, echo=FALSE}
+# Examine the correlation
+reg_model2 <- lm(mpg~ factor(am):wt + factor(am):qsec,data=mtcars)
+summary(reg_model2)
+```
+
